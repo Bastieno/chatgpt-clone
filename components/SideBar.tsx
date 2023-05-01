@@ -1,6 +1,6 @@
+import { useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { slide as Menu } from 'react-burger-menu';
 import { collection, orderBy, query } from 'firebase/firestore';
@@ -13,7 +13,7 @@ import {
   ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline';
 
-import { db } from '../firebase';
+import LoadingIcon from './LoadingIcon';
 import ChatRow from './ChatRow';
 import ModelSelection from './ModelSelection';
 import { useAppContext } from './AppProvider';
@@ -21,6 +21,7 @@ import { useMenuContext } from './MenuProvider';
 import { useViewport } from './ViewportProvider';
 import useDarkMode from '../hooks/useDarkMode';
 import NewChat from './NewChat';
+import { db } from '../firebase';
 
 export function SideMenu() {
   const { data: session } = useSession();
@@ -28,7 +29,7 @@ export function SideMenu() {
   const { isMobile } = useViewport();
   const { node, themeChanger } = useDarkMode();
 
-  const [chats] = useCollection(
+  const [chats, loading] = useCollection(
     session &&
       query(
         collection(db, 'users', session.user?.email!, 'chats'),
@@ -44,57 +45,62 @@ export function SideMenu() {
   }, [isMobile]);
 
   return (
-    <Menu
-      customBurgerIcon={false}
-      isOpen={isMenuOpen}
-      onStateChange={(state) => stateChangeHandler(state)}
-      customCrossIcon={<XMarkIcon className='h-4 w-4 text-white' />}
-    >
-      <div className='top-section'>
-        <div>
-          <NewChat />
-          <ModelSelection />
-        </div>
-        <div className='flex flex-col space-y-2 my-2 overflow-y-auto'>
-          {chats?.docs.map((chat) => (
-            <ChatRow key={chat.id} id={chat.id} closeMenu={closeMenu} />
-          ))}
-        </div>
-      </div>
-      <div className='second-section border-t border-white/20 overflow-auto'>
-        <div className='sidebarRow mt-2' onClick={closeMenu}>
-          <TrashIcon className='h-4 w-4' />
-          <p>Clear conversations</p>
-        </div>
-        <div
-          className='sidebarRow'
-          onClick={() => {
-            themeChanger();
-            closeMenu();
-          }}
+    <>
+      {isMenuOpen && (
+        <Menu
+          customBurgerIcon={false}
+          isOpen={isMenuOpen}
+          onStateChange={(state) => stateChangeHandler(state)}
+          customCrossIcon={<XMarkIcon className='h-4 w-4 text-white' />}
         >
-          {node}
-        </div>
-        <a
-          href='https://help.openai.com/en/collections/3742473-chatgpt'
-          target='_blank'
-          className='sidebarRow'
-        >
-          <ArrowTopRightOnSquareIcon className='h-4 w-4' />
-          <p>Updates & FAQ</p>
-        </a>
-        <div
-          className='sidebarRow'
-          onClick={() => {
-            signOut();
-            closeMenu();
-          }}
-        >
-          <ArrowRightOnRectangleIcon className='h-4 w-4' />
-          <p>Log out</p>
-        </div>
-      </div>
-    </Menu>
+          <div className='top-section'>
+            <div>
+              <NewChat />
+              <ModelSelection />
+            </div>
+            <div className='flex flex-col space-y-2 my-2 overflow-y-auto'>
+              <LoadingIcon visible={loading} />
+              {chats?.docs.map((chat) => (
+                <ChatRow key={chat.id} id={chat.id} closeMenu={closeMenu} />
+              ))}
+            </div>
+          </div>
+          <div className='second-section border-t border-white/20 overflow-auto'>
+            <div className='sidebarRow mt-2' onClick={closeMenu}>
+              <TrashIcon className='h-4 w-4' />
+              <p>Clear conversations</p>
+            </div>
+            <div
+              className='sidebarRow'
+              onClick={() => {
+                themeChanger();
+                closeMenu();
+              }}
+            >
+              {node}
+            </div>
+            <a
+              href='https://help.openai.com/en/collections/3742473-chatgpt'
+              target='_blank'
+              className='sidebarRow'
+            >
+              <ArrowTopRightOnSquareIcon className='h-4 w-4' />
+              <p>Updates & FAQ</p>
+            </a>
+            <div
+              className='sidebarRow'
+              onClick={() => {
+                signOut();
+                closeMenu();
+              }}
+            >
+              <ArrowRightOnRectangleIcon className='h-4 w-4' />
+              <p>Log out</p>
+            </div>
+          </div>
+        </Menu>
+      )}
+    </>
   );
 }
 
@@ -125,7 +131,7 @@ function MobileComponent() {
 function DesktopComponent() {
   const { data: session } = useSession();
 
-  const [chats] = useCollection(
+  const [chats, loading] = useCollection(
     session &&
       query(
         collection(db, 'users', session.user?.email!, 'chats'),
@@ -143,6 +149,7 @@ function DesktopComponent() {
           <ModelSelection />
         </div>
         <div className='flex flex-col space-y-2 my-2 overflow-y-auto'>
+          <LoadingIcon visible={loading} />
           {chats?.docs.map((chat) => (
             <ChatRow key={chat.id} id={chat.id} />
           ))}
